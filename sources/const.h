@@ -1,9 +1,6 @@
-/**
-*	Function:	Define const
-*	Author:		ko12
-*	Start Time:	3/25/2015
-*	End Time:	3/27/2015
-*/
+/*
+ * Define constant
+ */
 
 #ifndef _CONST_H
 #define _CONST_H
@@ -36,8 +33,6 @@
 #define CHESS_BK_RGB_DEFAULT	RGB(0,0,255)
 
 /**************************** Don't change ***********************************/
-#define NODE_X_SCALE_COUNT	9
-#define NODE_Y_SCALE_COUNT	10
 #define BOARD_WIDTH			(NODE_INTERVAL * (NODE_X_SCALE_COUNT - 1))
 #define BOARD_HEIGHT		(NODE_INTERVAL * (NODE_Y_SCALE_COUNT - 1))
 #define BOARD_END_X			(BOARD_X + BOARD_WIDTH)
