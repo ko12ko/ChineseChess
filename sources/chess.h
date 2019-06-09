@@ -1,15 +1,12 @@
-/**
-*	Function:	Chinese Chess
-*	Author:		ko12
-*	Start Time:	3/25/2015
-*	End Time:	3/30/2015
-*/
+/*
+ * Chinese Chess core
+ */
 
 #ifndef _CHESS_H
 #define _CHESS_H
 
-#include <windows.h>
-#include "const.h"
+#define NODE_X_SCALE_COUNT	9
+#define NODE_Y_SCALE_COUNT	10
 
 // Position of the board
 typedef struct
@@ -17,8 +14,6 @@ typedef struct
 	int x;
 	int y;
 }Position;
-
-extern const PTCHAR typeToName[ 15 ];
 
 // Chess type
 typedef enum {
@@ -46,7 +41,7 @@ typedef struct
 	int reverse;			// Reverse board
 }Board;
 
-int BoardInit(Board **);
+int BoardInit(Board **, int);
 int BoardMoveChess(Board *, Position, Position);
 void BoardSelect(Board *, Position);
 int BoardSave(Board *board, char szFileName[]);

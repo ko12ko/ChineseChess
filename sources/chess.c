@@ -1,38 +1,16 @@
-/**
-*	Function:	Chinese Chess
-*	Author:		ko12
-*	Start Time:	3/25/2015
-*	End Time:	3/30/2015
-*/
+/*
+ * Chinese Chess core
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "chess.h"
 
-// Chess type map to chess name.
-const PTCHAR typeToName[ 15 ] = {
-	TEXT(" "),
-	TEXT("兵"),
-	TEXT("砲"),
-	TEXT("車"),
-	TEXT("馬"),
-	TEXT("相"),
-	TEXT("仕"),
-	TEXT("帅"),
-	TEXT("卒"),
-	TEXT("炮"),
-	TEXT("车"),
-	TEXT("马"),
-	TEXT("象"),
-	TEXT("士"),
-	TEXT("将")
-};
-
 // Initialize game
 // Return value
 //		== 0, success
 //		!= 0, failure
-int BoardInit(Board **board)
+int BoardInit(Board **board, int isBoardReverse)
 {
 	*board = (Board *)malloc(sizeof(Board));
 	if (!*board)
@@ -59,7 +37,7 @@ int BoardInit(Board **board)
 	(*board)->winner	= 0;
 	(*board)->owner		= 0;
 	(*board)->indexPos	= 0;
-	(*board)->reverse	= BOARD_REVERSE;
+	(*board)->reverse	= isBoardReverse;
 	return 0;
 }
 
@@ -332,6 +310,8 @@ int BoardMoveChess(Board *board, Position startPos, Position endPos)
 			return 0;
 		}
 		return 1;
+	default:
+		return 1;
 	}
 }
 
@@ -383,22 +363,4 @@ void BoardSelect(Board *board, Position pos)
 		}
 		board->indexPos ^= 1;		// Change step
 	}
-}
-
-// Save game
-// return value
-//		== 0, success
-//		!= 0, failure
-int BoardSave(Board *board, char szFileName[])
-{
-	FILE *file;
-	
-	fopen_s(&file, szFileName, "wb");				// modify by jishichao on 2017.10.15
-	if (!file)
-	{
-		return 1;
-	}
-	fwrite(board->map, sizeof(ChessType), NODE_Y_SCALE_COUNT * NODE_X_SCALE_COUNT, file);
-	fclose(file);
-	return 0;
 }

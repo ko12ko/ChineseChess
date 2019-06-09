@@ -1,14 +1,30 @@
-/**
-*	Function:	Create chinese chess game.
-*	Author:		ko12
-*	Start Time:	3/25/2015
-*	End Time:	3/30/2015
-*/
+/*
+ * Create chinese chess game.
+ */
 
 #include <windows.h>
 #include <strsafe.h>
 #include "const.h"
 #include "chess.h"
+
+// Chess type map to chess name.
+const PTCHAR chessTypeToName[15] = {
+	TEXT(" "),
+	TEXT("兵"),
+	TEXT("砲"),
+	TEXT("車"),
+	TEXT("馬"),
+	TEXT("相"),
+	TEXT("仕"),
+	TEXT("帅"),
+	TEXT("卒"),
+	TEXT("炮"),
+	TEXT("车"),
+	TEXT("马"),
+	TEXT("象"),
+	TEXT("士"),
+	TEXT("将")
+};
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -186,7 +202,7 @@ void drawChess(HDC hdc, Board *board)
 			{
 				continue;
 			}
-			str = typeToName[ board->map[ i ][ j ] ];
+			str = chessTypeToName[ board->map[ i ][ j ] ];
 			StringCchLength(str, 3, &size);
 			TextOut(hdc, BOARD_X + ((!board->reverse) ? j : (NODE_X_SCALE_COUNT - 1 - j)) * ELEMENT_X, BOARD_Y + ((!board->reverse) ? i : (NODE_Y_SCALE_COUNT - 1 - i)) * ELEMENT_Y, str, size);
 		}
@@ -194,7 +210,6 @@ void drawChess(HDC hdc, Board *board)
 
 	SelectObject(hdc, hFontOld);
 	SetTextAlign(hdc, uint);
-	//SelectObject(hdc, hPenOld);
 }
 
 void drawOwnerInfo(HDC hdc, Board *board, int x, int y)
@@ -249,7 +264,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 	case WM_CREATE:
-		if (BoardInit(&board))
+		if (BoardInit(&board, BOARD_REVERSE))
 		{
 			MessageBox(hwnd, TEXT("游戏初始化错误"), TEXT("错误"), MB_OK);
 			DestroyWindow(hwnd);
