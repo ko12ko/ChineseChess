@@ -1,7 +1,1 @@
-.vs/
-Debug/
-Release/
-*.sln
-*.vcxproj*
-*.exe
-*.obj
+build/
