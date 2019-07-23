@@ -36,8 +36,6 @@ int BoardInit(Board **board, int isBoardReverse)
 
 	(*board)->winner	= 0;
 	(*board)->owner		= 0;
-	(*board)->indexPos	= 0;
-	(*board)->reverse	= isBoardReverse;
 	return 0;
 }
 
@@ -113,7 +111,7 @@ int BoardFaceToFace(Board *board, Position pos)
 // Return value
 //		== 0, success
 //		!= 0, failure
-int BoardMoveChess(Board *board, Position startPos, Position endPos)
+static int moveChess(Board *board, Position startPos, Position endPos)
 {
 	int i;
 	ChessType startChess, endChess;
@@ -315,52 +313,32 @@ int BoardMoveChess(Board *board, Position startPos, Position endPos)
 	}
 }
 
-// Choose a position
-void BoardSelect(Board *board, Position pos)
-{
-	ChessType chess;
-	int flag;
-
-	// Out of board
-	if (pos.x < 0 || pos.x > NODE_Y_SCALE_COUNT || pos.y < 0 || pos.y > NODE_X_SCALE_COUNT)
-		return;
-
-	if (!board->indexPos)			// startPos
+// Move chess and change board status
+// Return value
+//		== 0, success
+//		!= 0, failure
+int BoardMoveChess(Board *board, Position startPos, Position endPos) {
+	int flag = 0;
+	// Whether or not want to eat general
+	if (board->map[endPos.x][endPos.y] == general1)
 	{
-		chess = board->map[ pos.x ][ pos.y ];
-		if (chess == space || ((!board->owner) ? (chess < soldier1 || chess > general1) : (chess < soldier2 || chess > general2)))
-		{
-			return ;
-		}
-		board->movePos[ board->indexPos ] = pos;
-		board->indexPos ^= 1;
+		flag = 2;
 	}
-	else							// endPos
+	else if (board->map[endPos.x][endPos.y] == general2)
 	{
-		flag = 0;
-		board->movePos[ board->indexPos ] = pos;
-		// Whether or not want to eat general
-		if (board->map[ board->movePos[ 1 ].x ][ board->movePos[ 1 ].y ] == general1)
-		{
-			flag = 2;
-		}
-		else if (board->map[ board->movePos[ 1 ].x ][ board->movePos[ 1 ].y ] == general2)
-		{
-			flag = 1;
-		}
-		// move chess
-		if (!BoardMoveChess(board, board->movePos[ 0 ], board->movePos[ 1 ]))
-		{
-			if (flag == 1)			// player 1 is winner
-			{
-				board->winner = 1;
-			}
-			else if (flag == 2)		// player 2 is winner
-			{
-				board->winner = 2;
-			}
-			board->owner ^= 1;		// Change owner
-		}
-		board->indexPos ^= 1;		// Change step
+		flag = 1;
 	}
+	int status = moveChess(board, startPos, endPos);
+	if (!status) {
+		if (flag == 1)			// player 1 is winner
+		{
+			board->winner = 1;
+		}
+		else if (flag == 2)		// player 2 is winner
+		{
+			board->winner = 2;
+		}
+		board->owner ^= 1;		// Change owner
+	}
+	return status;
 }

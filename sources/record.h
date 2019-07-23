@@ -4,18 +4,19 @@
 
 #define RECORD_DATA_LENGTH 45
 
-typedef struct {
+typedef struct Record {
 	unsigned int *data;
-	Record *previous;
-	Record **next;
+	struct Record *previous;
+	struct Record **next;
 	int nextCount;
 	int owner;
 } Record;
 
-
-int record(Record *record, unsigned int *board);
-int restore(Record *record, unsigned int **board);
-int saveRecord(Record *record, char *filename);
-int loadRecord(Record *record, char *filename);
+int RecordInit(Record **, unsigned int *, unsigned int, int);
+int RecordAdd(Record *, unsigned int *, unsigned int, int);
+int RecordRestore(Record *, unsigned int **);
+int RecordSave(Record *, const char *);
+int RecordLoad(Record *, const char *);
+void RecordEnd(Record *);
 
 #endif

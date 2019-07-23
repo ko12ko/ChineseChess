@@ -40,5 +40,8 @@
 #define ELEMENT_X			(BOARD_WIDTH / (NODE_X_SCALE_COUNT - 1))
 #define ELEMENT_Y			(BOARD_HEIGHT / (NODE_Y_SCALE_COUNT - 1))
 
+#define NODE_X_SCALE_COUNT	9
+#define NODE_Y_SCALE_COUNT	10
+
 
 #endif

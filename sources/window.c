@@ -2,13 +2,13 @@
  * Create chinese chess game.
  */
 
-#include <windows.h>
 #include <strsafe.h>
+#include "window.h"
 #include "const.h"
-#include "chess.h"
+#include "common.h"
 
 // Chess type map to chess name.
-const PTCHAR chessTypeToName[15] = {
+static const PTCHAR chessTypeToName[15] = {
 	TEXT(" "),
 	TEXT("兵"),
 	TEXT("砲"),
@@ -26,14 +26,29 @@ const PTCHAR chessTypeToName[15] = {
 	TEXT("将")
 };
 
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+
+static Window *windowInfo;
+
+int WindowInit(Window **window, unsigned int *board, int owner, int winner, int reverse) {
+	Window *newWindow = (Window*)malloc(sizeof(Window));
+	newWindow->board = board;
+	newWindow->owner = owner;
+	newWindow->winner = winner;
+	newWindow->indexPos = 0;
+	newWindow->reverse = reverse;
+	newWindow->isError = 0;
+	newWindow->hwnd = NULL;
+
+	*window = newWindow;
+	return 0;
+}
 
 // Entry
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow)
+int WINAPI WindowCreate(Window *window, HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow)
 {
 	static TCHAR szAppName[] = TEXT(APP_NAME);			// Application name
 	HWND hwnd;
-	MSG msg;
 	WNDCLASS wndclass;
 
 	wndclass.style = CS_HREDRAW | CS_VREDRAW;
@@ -50,8 +65,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	if (!RegisterClass(&wndclass))
 	{
 		MessageBox(NULL, TEXT("This program must run on Windows NT!"), szAppName, MB_ICONERROR);
-		return 0;
+		return 1;
 	}
+
+	windowInfo = window;
 
 	hwnd = CreateWindow(szAppName, 
 		TEXT(WINDOW_NAME), 
@@ -65,16 +82,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		hInstance, 
 		NULL);
 
+	window->hwnd = hwnd;
+
 	ShowWindow(hwnd, iCmdShow);
 	UpdateWindow(hwnd);
+
+	return 0;
+}
+
+void WindowRunLoop() {
+	MSG msg;
 
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
-
-	return msg.wParam;
 }
 
 // draw angle line
@@ -83,7 +106,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 //		1		-- write left angle line
 //		2		-- write right angle line
 //		others	-- don't write angle line
-void drawAngleLine(HDC hdc, int posX, int posY, int flag)
+static void drawAngleLine(HDC hdc, int posX, int posY, int flag)
 {
 	if (flag == 0 || flag == 1)
 	{
@@ -110,7 +133,7 @@ void drawAngleLine(HDC hdc, int posX, int posY, int flag)
 }
 
 // Draw board
-void drawBoard(HDC hdc)
+static void drawBoard(HDC hdc)
 {
 	int i;
 
@@ -162,7 +185,7 @@ void drawBoard(HDC hdc)
 }
 
 // Draw all chess on board
-void drawChess(HDC hdc, Board *board)
+static void drawChess(Window *window, HDC hdc)
 {
 	int i, j;
 	PTCHAR str;
@@ -188,12 +211,12 @@ void drawChess(HDC hdc, Board *board)
 	{
 		for (j = 0; j < NODE_X_SCALE_COUNT; j ++)
 		{
-			if (board->map[ i ][ j ] >= soldier1 && board->map[ i ][ j ] <= general1)
+			if ((unsigned int)*(window->board + i * NODE_X_SCALE_COUNT + j) >= soldier1 && *(window->board + i * NODE_X_SCALE_COUNT + j) <= general1)
 			{
 				//hPenOld = (HPEN)SelectObject(hdc, hPen1);
 				SetBkColor(hdc, CHESS_BK_RGB_1);
 			}
-			else if (board->map[ i ][ j ] >= soldier2 && board->map[ i ][ j ] <= general2)
+			else if ((unsigned int)*(window->board + i * NODE_X_SCALE_COUNT + j) >= soldier2 && *(window->board + i * NODE_X_SCALE_COUNT + j) <= general2)
 			{
 				//hPenOld = (HPEN)SelectObject(hdc, hPen2);
 				SetBkColor(hdc, CHESS_BK_RGB_2);
@@ -202,9 +225,9 @@ void drawChess(HDC hdc, Board *board)
 			{
 				continue;
 			}
-			str = chessTypeToName[ board->map[ i ][ j ] ];
+			str = chessTypeToName[*(window->board + i * NODE_X_SCALE_COUNT + j)];
 			StringCchLength(str, 3, &size);
-			TextOut(hdc, BOARD_X + ((!board->reverse) ? j : (NODE_X_SCALE_COUNT - 1 - j)) * ELEMENT_X, BOARD_Y + ((!board->reverse) ? i : (NODE_Y_SCALE_COUNT - 1 - i)) * ELEMENT_Y, str, size);
+			TextOut(hdc, BOARD_X + ((!window->reverse) ? j : (NODE_X_SCALE_COUNT - 1 - j)) * ELEMENT_X, BOARD_Y + ((!window->reverse) ? i : (NODE_Y_SCALE_COUNT - 1 - i)) * ELEMENT_Y, str, size);
 		}
 	}
 
@@ -212,28 +235,53 @@ void drawChess(HDC hdc, Board *board)
 	SetTextAlign(hdc, uint);
 }
 
-void drawOwnerInfo(HDC hdc, Board *board, int x, int y)
+static void drawOwnerInfo(Window *window, HDC hdc, int x, int y)
 {
 	TCHAR strOwner[ 20 ], strStep[ 20 ];
 	UINT uint;
 	size_t sizeOwner, sizeStep;
 
-	SetBkColor(hdc, (!board->owner) ? CHESS_BK_RGB_1 : CHESS_BK_RGB_2);
+	SetBkColor(hdc, (!window->owner) ? CHESS_BK_RGB_1 : CHESS_BK_RGB_2);
 
-	StringCchPrintf(strOwner, 20, (!board->owner) ? TEXT("玩家：1") : TEXT("玩家：2"));
+	StringCchPrintf(strOwner, 20, (!window->owner) ? TEXT("玩家：1") : TEXT("玩家：2"));
 	StringCchLength(strOwner, 20, &sizeOwner);
-	StringCchPrintf(strStep, 20, (!board->indexPos) ? TEXT("选起点") : TEXT("选终点"));
+	StringCchPrintf(strStep, 20, (!window->indexPos) ? TEXT("选起点") : TEXT("选终点"));
 	StringCchLength(strStep, 20, &sizeStep);
 	uint = GetTextAlign(hdc);
 	SetTextAlign(hdc, TA_RIGHT);
 	TextOut(hdc, x, y, strOwner, sizeOwner);
 	TextOut(hdc, x, y + 30, strStep, sizeStep);
 	SetTextAlign(hdc, uint);
-
-
 }
 
-void mouseClick(Board *board, int mouseX, int mouseY)
+static void selectChess(Window *window, Position pos)
+{
+	ChessType chess;
+
+	// Out of board
+	if (pos.x < 0 || pos.x > NODE_Y_SCALE_COUNT || pos.y < 0 || pos.y > NODE_X_SCALE_COUNT)
+		return;
+
+	if (!window->indexPos)			// startPos
+	{
+		chess = *(window->board + pos.x * NODE_X_SCALE_COUNT + pos.y);
+		if (chess == space || ((!window->owner) ? (chess < soldier1 || chess > general1) : (chess < soldier2 || chess > general2)))
+		{
+			return;
+		}
+		window->movePos[window->indexPos] = pos;
+		window->indexPos ^= 1;
+	}
+	else							// endPos
+	{
+		window->movePos[window->indexPos] = pos;
+		// move chess
+		eventMoveChess(window->movePos[0], window->movePos[1]);
+		window->indexPos ^= 1;		// Change step
+	}
+}
+
+static void mouseClick(Window *window, int mouseX, int mouseY)
 {
 	Position pos;
 
@@ -242,29 +290,28 @@ void mouseClick(Board *board, int mouseX, int mouseY)
 	if (pos.x >= 0 && pos.x < NODE_Y_SCALE_COUNT && pos.y >= 0 && pos.y < NODE_X_SCALE_COUNT)
 	{
 		// reverse board
-		if (board->reverse)
+		if (window->reverse)
 		{
 			pos.x = NODE_Y_SCALE_COUNT - 1 - pos.x;
 			pos.y = NODE_X_SCALE_COUNT - 1 - pos.y;
 		}
 
-		BoardSelect(board, pos);
+		selectChess(window, pos);
 	}
 }
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	HDC hdc;
 	PAINTSTRUCT ps;
 	int mouseX, mouseY;
 
-	static Board *board;
 	static int xClient, yClient;
 
 	switch (message)
 	{
 	case WM_CREATE:
-		if (BoardInit(&board, BOARD_REVERSE))
+		if (windowInfo->isError != 0)
 		{
 			MessageBox(hwnd, TEXT("游戏初始化错误"), TEXT("错误"), MB_OK);
 			DestroyWindow(hwnd);
@@ -279,12 +326,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_PAINT:
 		hdc = BeginPaint(hwnd, &ps);
 		drawBoard(hdc);
-		drawChess(hdc, board);
-		drawOwnerInfo(hdc, board, xClient, 0);
+		drawChess(windowInfo, hdc);
+		drawOwnerInfo(windowInfo, hdc, xClient, 0);
 		EndPaint(hwnd, &ps);
-		if (board->winner)
+		if (windowInfo->winner)
 		{
-			MessageBox(hwnd, (board->winner == 1) ? TEXT("玩家1胜利！！") : TEXT("玩家2胜利！！"), TEXT("结束"), MB_OK);
+			MessageBox(hwnd, (windowInfo->winner == 1) ? TEXT("玩家1胜利！！") : TEXT("玩家2胜利！！"), TEXT("结束"), MB_OK);
 			DestroyWindow(hwnd);
 		}
 		return 0;
@@ -292,16 +339,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONDOWN:
 		mouseX = LOWORD(lParam);
 		mouseY = HIWORD(lParam);
-		mouseClick(board, mouseX, mouseY);
+		mouseClick(windowInfo, mouseX, mouseY);
 		InvalidateRect(hwnd, NULL, TRUE);
 		return 0;
 
 	case WM_DESTROY:
-		if (board)
-			free(board);
+		eventGameEnd();
 		PostQuitMessage(0);
 		return 0;
 	}
 
 	return DefWindowProc(hwnd, message, wParam, lParam);
+}
+
+void WindowEnd(Window *window) {
+	free(window->board);
 }
