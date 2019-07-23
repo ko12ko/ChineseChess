@@ -5,7 +5,7 @@
 #define RECORD_DATA_LENGTH 45
 
 typedef struct Record {
-	unsigned int *data;
+	unsigned char *data;
 	struct Record *previous;
 	struct Record **next;
 	int nextCount;

@@ -3,28 +3,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static unsigned int *encodeBoard(unsigned int *board, unsigned int boardSize) {
-	unsigned int *data = (unsigned int *)malloc(RECORD_DATA_LENGTH * sizeof(unsigned int));
+static unsigned char *encodeBoard(unsigned int *board, unsigned int boardSize) {
+	unsigned char *data = (unsigned char *)malloc(RECORD_DATA_LENGTH * sizeof(unsigned char));
 	int k = 0;
-	unsigned int value = 0;
+	unsigned char value = 0;
 	for (unsigned int i = 0; i < boardSize; i++) {
 		if (k % 2 == 0) {
-			value = board[i] << 4;
+			value = (unsigned char)board[i] << 4;
 		}
 		else {
-			value = value | (board[i] & 0x00ff);
+			value = value | ((unsigned char)board[i] & 0x0f);
+			data[k / 2] = value;
 		}
-		data[k / 2] = value;
 		k++;
 	}
 	return data;
 }
 
-static unsigned int *decodeBoard(unsigned int *data) {
+static unsigned int *decodeBoard(unsigned char *data) {
 	unsigned int *board = (unsigned int *)malloc(RECORD_DATA_LENGTH * 2 * sizeof(unsigned int));
 	for (unsigned int i = 0; i < RECORD_DATA_LENGTH; i++) {
 		board[i * 2] = data[i] >> 4;
-		board[i * 2 + 1] = data[i] & 0x00ff;
+		board[i * 2 + 1] = data[i] & 0x0f;
 	}
 	return board;
 }
@@ -70,8 +70,8 @@ int RecordSave(Record *record, const char *filename) {
 	if (file == NULL) {
 		return 1;
 	}
-	fwrite(record->data, sizeof(unsigned int), RECORD_DATA_LENGTH, file);
-	fwrite(record->owner, sizeof(int), 1, file);
+	fwrite(record->data, sizeof(unsigned char), RECORD_DATA_LENGTH, file);
+	fwrite(&record->owner, sizeof(int), 1, file);
 	fclose(file);
 	return 0;
 }
@@ -82,8 +82,8 @@ int RecordLoad(Record *record, const char *filename) {
 	if (file == NULL) {
 		return 1;
 	}
-	fread(record->data, sizeof(unsigned int), RECORD_DATA_LENGTH, file);
-	fread(record->owner, sizeof(int), 1, file);
+	fread(record->data, sizeof(unsigned char), RECORD_DATA_LENGTH, file);
+	fread(&record->owner, sizeof(int), 1, file);
 	fclose(file);
 	return 0;
 }

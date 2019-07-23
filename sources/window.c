@@ -297,6 +297,10 @@ static void mouseClick(Window *window, int mouseX, int mouseY)
 		}
 
 		selectChess(window, pos);
+		return;
+	}
+	if (pos.x == NODE_Y_SCALE_COUNT && pos.y == NODE_X_SCALE_COUNT) {
+		eventLoad();
 	}
 }
 
