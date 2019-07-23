@@ -5,7 +5,7 @@
 int eventMoveChess(Position startPos, Position endPos);
 
 void eventGameEnd();
-//void eventSave();
+void eventSave();
 void eventLoad();
 
 #endif

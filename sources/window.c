@@ -7,6 +7,11 @@
 #include "const.h"
 #include "common.h"
 
+typedef struct {
+	Position pos;
+	PTCHAR name;
+} FunctionButton;
+
 // Chess type map to chess name.
 static const PTCHAR chessTypeToName[15] = {
 	TEXT(" "),
@@ -25,6 +30,9 @@ static const PTCHAR chessTypeToName[15] = {
 	TEXT("士"),
 	TEXT("将")
 };
+
+static FunctionButton saveButton = { {NODE_Y_SCALE_COUNT - 1, NODE_X_SCALE_COUNT + 1}, TEXT("保存") };
+static FunctionButton loadButton = { {NODE_Y_SCALE_COUNT - 2, NODE_X_SCALE_COUNT + 1}, TEXT("加载") };
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -254,6 +262,37 @@ static void drawOwnerInfo(Window *window, HDC hdc, int x, int y)
 	SetTextAlign(hdc, uint);
 }
 
+static void drawButton(Window *window, HDC hdc) {
+	UINT uint;
+	HFONT hFontOld, hFont;
+
+	SetBkColor(hdc, RGB(100, 100, 100));
+	SetBkMode(hdc, OPAQUE);
+
+	hFont = CreateFont(30, 0, 0, 0, FW_HEAVY, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("Impact"));
+	hFontOld = (HFONT)SelectObject(hdc, hFont);
+
+	uint = GetTextAlign(hdc);
+	SetTextAlign(hdc, VTA_BASELINE | TA_CENTER);
+
+	SetBkColor(hdc, CHESS_BK_RGB_1);
+
+	{
+		size_t size;
+		StringCchLength(loadButton.name, 5, &size);
+		TextOut(hdc, BOARD_X + loadButton.pos.y * ELEMENT_X, BOARD_Y + loadButton.pos.x * ELEMENT_Y, loadButton.name, size);
+	}
+	{
+		size_t size;
+		StringCchLength(saveButton.name, 5, &size);
+		TextOut(hdc, BOARD_X + saveButton.pos.y * ELEMENT_X, BOARD_Y + saveButton.pos.x * ELEMENT_Y, saveButton.name, size);
+	}
+
+	SelectObject(hdc, hFontOld);
+	SetTextAlign(hdc, uint);
+}
+
 static void selectChess(Window *window, Position pos)
 {
 	ChessType chess;
@@ -299,8 +338,13 @@ static void mouseClick(Window *window, int mouseX, int mouseY)
 		selectChess(window, pos);
 		return;
 	}
-	if (pos.x == NODE_Y_SCALE_COUNT && pos.y == NODE_X_SCALE_COUNT) {
+	if (pos.x == loadButton.pos.x && pos.y == loadButton.pos.y) {
 		eventLoad();
+		return;
+	}
+	if (pos.x == saveButton.pos.x && pos.y == saveButton.pos.y) {
+		eventSave();
+		return;
 	}
 }
 
@@ -332,6 +376,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 		drawBoard(hdc);
 		drawChess(windowInfo, hdc);
 		drawOwnerInfo(windowInfo, hdc, xClient, 0);
+		drawButton(windowInfo, hdc);
 		EndPaint(hwnd, &ps);
 		if (windowInfo->winner)
 		{
